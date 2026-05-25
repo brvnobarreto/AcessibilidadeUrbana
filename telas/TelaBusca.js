@@ -9,14 +9,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { cores } from '../styles';
 import { LOCAIS } from '../lib/dadosAcessibilidade';
-
-const GREEN = '#21B06B';
-const HEADER = '#1F7D4A';
-const BG = '#1F2329';
-const CARD = '#232930';
-const BORDER = '#4A5563';
-const TXT = '#E8E8E8';
 
 function Chip({ label, active, onPress }) {
   return (
@@ -59,12 +53,12 @@ function TelaBusca({ navigation }) {
 
       <ScrollView contentContainerStyle={s.content}>
         <View style={s.searchWrap}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#C7B08A" style={{ marginRight: 6 }} />
+          <MaterialCommunityIcons name="magnify" size={18} color={cores.textoSecundario} style={{ marginRight: 6 }} />
           <TextInput
             value={filtros.busca}
             onChangeText={(t) => setFiltros((p) => ({ ...p, busca: t }))}
             placeholder="Ex: Praça do Ferreira..."
-            placeholderTextColor="#7A828B"
+            placeholderTextColor={cores.textoSecundario}
             style={s.searchInput}
           />
         </View>
@@ -108,28 +102,28 @@ function TelaBusca({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: BG },
-  header: { height: 84, backgroundColor: HEADER, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
+  screen: { flex: 1, backgroundColor: cores.fundo },
+  header: { height: 84, backgroundColor: cores.primariaEscura, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
   headerTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
   content: { padding: 16, paddingBottom: 24 },
   searchWrap: {
     height: 52,
     borderWidth: 2,
-    borderColor: GREEN,
+    borderColor: cores.primaria,
     borderRadius: 24,
     paddingHorizontal: 12,
-    backgroundColor: CARD,
+    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
   },
-  searchInput: { flex: 1, color: TXT, fontSize: 15 },
-  block: { marginTop: 16, color: TXT, fontSize: 18, fontWeight: '700' },
+  searchInput: { flex: 1, color: cores.texto, fontSize: 15 },
+  block: { marginTop: 16, color: cores.texto, fontSize: 18, fontWeight: '700' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
-  chip: { borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 },
-  chipActive: { backgroundColor: GREEN, borderColor: GREEN },
-  chipText: { color: '#C2C7CD', fontSize: 15 },
+  chip: { borderWidth: 1, borderColor: cores.borda, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#fff' },
+  chipActive: { backgroundColor: cores.primaria, borderColor: cores.primaria },
+  chipText: { color: cores.textoSecundario, fontSize: 15 },
   chipTextActive: { color: '#fff', fontWeight: '600' },
-  btn: { marginTop: 24, height: 54, borderRadius: 14, backgroundColor: '#1F8D57', alignItems: 'center', justifyContent: 'center' },
+  btn: { marginTop: 24, height: 54, borderRadius: 14, backgroundColor: cores.primaria, alignItems: 'center', justifyContent: 'center' },
   btnTxt: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });
 

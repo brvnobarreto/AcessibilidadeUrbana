@@ -117,6 +117,19 @@ function TelaHome({ navigation }) {
               colors={[cores.primaria]}
             />
           }
+          ListHeaderComponent={
+            <TouchableOpacity
+              style={s.cardEstatisticas}
+              onPress={() => navigation.navigate('EstatisticasRegiao')}
+              activeOpacity={0.85}>
+              <MaterialCommunityIcons name="chart-bar" size={28} color={cores.primaria} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={s.cardEstatisticasTitulo}>Estatísticas por Região</Text>
+                <Text style={s.cardEstatisticasDesc}>Desempenho médio e critérios mais avaliados</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={cores.textoSecundario} />
+            </TouchableOpacity>
+          }
           ListEmptyComponent={
             <View style={s.vazio}>
               <MaterialCommunityIcons name="map-search-outline" size={56} color={cores.textoSecundario} />
@@ -150,6 +163,9 @@ const s = StyleSheet.create({
   tentarNovamenteTexto: { color: '#fff', fontWeight: '600' },
   vazio:       { alignItems: 'center', paddingTop: 60 },
   vazioTexto:  { color: cores.textoSecundario, marginTop: 12, fontSize: 15 },
+  cardEstatisticas: { flexDirection: 'row', alignItems: 'center', backgroundColor: cores.fundoCard, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: cores.primaria + '40' },
+  cardEstatisticasTitulo: { fontSize: 14, fontWeight: '700', color: cores.texto },
+  cardEstatisticasDesc:   { fontSize: 12, color: cores.textoSecundario, marginTop: 2 },
 });
 
 export default TelaHome;

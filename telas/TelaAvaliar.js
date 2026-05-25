@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Text, View, TextInput, TouchableOpacity,
   Alert, ScrollView, StyleSheet, ActivityIndicator,
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { cores } from '../styles';
 import { reviewsApi } from '../lib/api';
+import { LOCAIS } from '../lib/dadosAcessibilidade';
 
 const CRITERIOS = [
   { key: 'ramp',                label: 'Rampa de acesso',           icone: 'wheelchair-accessibility' },
@@ -38,7 +39,17 @@ function Estrelas({ valor, onChange }) {
 
 function TelaAvaliar({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const { local } = route.params;
+
+  // Funciona tanto chamada de DetalhesLocal (com local) quanto da aba Avaliar (sem params)
+  const localParam = route?.params?.local ?? null;
+  const [localSelecionadoId, setLocalSelecionadoId] = useState(
+    localParam ? null : LOCAIS[0]?.id ?? null
+  );
+
+  const localAtivo = useMemo(() => {
+    if (localParam) return localParam;
+    return LOCAIS.find((l) => l.id === localSelecionadoId) ?? null;
+  }, [localParam, localSelecionadoId]);
 
   const [rating, setRating]       = useState(0);
   const [comment, setComment]     = useState('');
@@ -53,6 +64,10 @@ function TelaAvaliar({ route, navigation }) {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleEnviar = async () => {
+    if (!localAtivo) {
+      Alert.alert('Atenção', 'Selecione um local para avaliar.');
+      return;
+    }
     if (rating === 0) {
       Alert.alert('Atenção', 'Selecione uma nota de 1 a 5.');
       return;
@@ -60,7 +75,7 @@ function TelaAvaliar({ route, navigation }) {
     setCarregando(true);
     try {
       await reviewsApi.criar({
-        place_id: local.id,
+        place_id: localAtivo.id,
         rating,
         comment: comment.trim() || undefined,
         ...checklist,
@@ -77,7 +92,6 @@ function TelaAvaliar({ route, navigation }) {
 
   return (
     <View style={s.container}>
-      {/* Header fixo */}
       <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={cores.fundo} />
@@ -86,19 +100,44 @@ function TelaAvaliar({ route, navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Conteúdo rolável */}
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
 
         <View style={s.corpo}>
-          <Text style={s.localNome}>{local.name}</Text>
-          {(local.category || local.address) ? (
-            <Text style={s.localCategoria}>
-              {[local.category, local.address].filter(Boolean).join(' · ')}
-            </Text>
-          ) : null}
+
+          {/* Seleção de local — visível apenas quando aberta sem params (aba Avaliar) */}
+          {!localParam && (
+            <>
+              <Text style={s.secaoTitulo}>Selecionar local</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                {LOCAIS.map((l) => (
+                  <TouchableOpacity
+                    key={l.id}
+                    onPress={() => setLocalSelecionadoId(l.id)}
+                    style={[s.localChip, localSelecionadoId === l.id && s.localChipAtivo]}>
+                    <Text style={[s.localChipTexto, localSelecionadoId === l.id && s.localChipTextoAtivo]} numberOfLines={1}>
+                      {l.nome}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
+
+          {localAtivo && (
+            <>
+              <Text style={s.localNome}>{localAtivo.name ?? localAtivo.nome}</Text>
+              {(localAtivo.category || localAtivo.address || localAtivo.tipo) ? (
+                <Text style={s.localCategoria}>
+                  {[localAtivo.category ?? localAtivo.tipo, localAtivo.address ?? localAtivo.bairro]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Text>
+              ) : null}
+            </>
+          )}
 
           {/* Nota geral */}
           <View style={s.secao}>
@@ -147,7 +186,6 @@ function TelaAvaliar({ route, navigation }) {
             ))}
           </View>
 
-          {/* Botão enviar */}
           <TouchableOpacity
             style={[s.botao, carregando && { opacity: 0.7 }]}
             onPress={handleEnviar}
@@ -157,8 +195,8 @@ function TelaAvaliar({ route, navigation }) {
               : <Text style={s.botaoTexto}>ENVIAR AVALIAÇÃO</Text>
             }
           </TouchableOpacity>
-        </View>
 
+        </View>
       </ScrollView>
     </View>
   );
@@ -169,8 +207,12 @@ const s = StyleSheet.create({
   header:          { backgroundColor: cores.primariaEscura, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
   headerTitulo:    { color: cores.fundo, fontSize: 18, fontWeight: 'bold' },
   corpo:           { padding: 20 },
-  localNome:       { fontSize: 20, fontWeight: 'bold', color: cores.texto },
+  localNome:       { fontSize: 20, fontWeight: 'bold', color: cores.texto, marginTop: 8 },
   localCategoria:  { fontSize: 13, color: cores.textoSecundario, marginTop: 4, textTransform: 'capitalize' },
+  localChip:       { borderWidth: 1, borderColor: cores.borda, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, marginRight: 8, backgroundColor: '#fff' },
+  localChipAtivo:  { backgroundColor: cores.primaria, borderColor: cores.primaria },
+  localChipTexto:  { color: cores.textoSecundario, fontSize: 13 },
+  localChipTextoAtivo: { color: '#fff', fontWeight: '600' },
   secao:           { marginTop: 24 },
   secaoTitulo:     { fontSize: 15, fontWeight: '700', color: cores.texto, marginBottom: 8 },
   secaoDesc:       { fontSize: 13, color: cores.textoSecundario, marginBottom: 12 },

@@ -21,11 +21,18 @@ const REGIAO_INICIAL = {
 };
 
 const LOCAIS_MOCK = [
-  { id: 'm1', name: 'Praça do Ferreira',      avg_rating: 4.5, accessibility_level: 'green',  latitude: -3.7280, longitude: -38.5270 },
-  { id: 'm2', name: 'Mercado Central',         avg_rating: 4.2, accessibility_level: 'green',  latitude: -3.7295, longitude: -38.5180 },
-  { id: 'm3', name: 'Catedral Metropolitana',  avg_rating: 3.0, accessibility_level: 'orange', latitude: -3.7320, longitude: -38.5240 },
-  { id: 'm4', name: 'Theatro José de Alencar', avg_rating: 3.8, accessibility_level: 'green',  latitude: -3.7290, longitude: -38.5320 },
-  { id: 'm5', name: 'Passeio Público',         avg_rating: 2.0, accessibility_level: 'red',    latitude: -3.7345, longitude: -38.5290 },
+  { id: 'm1', name: 'Praça do Ferreira',        avg_rating: 4.3, accessibility_level: 'green',  latitude: -3.7280, longitude: -38.5270 },
+  { id: 'm2', name: 'Mercado Central',           avg_rating: 4.2, accessibility_level: 'green',  latitude: -3.7295, longitude: -38.5180 },
+  { id: 'm3', name: 'Catedral Metropolitana',    avg_rating: 3.0, accessibility_level: 'orange', latitude: -3.7320, longitude: -38.5240 },
+  { id: 'm4', name: 'Theatro José de Alencar',   avg_rating: 3.8, accessibility_level: 'green',  latitude: -3.7290, longitude: -38.5320 },
+  { id: 'm5', name: 'Passeio Público',           avg_rating: 2.0, accessibility_level: 'red',    latitude: -3.7345, longitude: -38.5290 },
+  { id: 'm6', name: 'Shopping Iguatemi Bosque',  avg_rating: 5.0, accessibility_level: 'green',  latitude: -3.7445, longitude: -38.4822 },
+  { id: 'm7', name: 'Beira-Mar de Fortaleza',    avg_rating: 4.8, accessibility_level: 'green',  latitude: -3.7202, longitude: -38.5018 },
+  { id: 'm8', name: 'Centro Dragão do Mar',      avg_rating: 4.7, accessibility_level: 'green',  latitude: -3.7248, longitude: -38.5213 },
+  { id: 'm9', name: 'Terminal Papicu',           avg_rating: 4.5, accessibility_level: 'green',  latitude: -3.7423, longitude: -38.4838 },
+  { id: 'm10', name: 'Parque do Cocó',           avg_rating: 4.4, accessibility_level: 'green',  latitude: -3.7477, longitude: -38.4914 },
+  { id: 'm11', name: 'Vila do Mar',              avg_rating: 4.2, accessibility_level: 'green',  latitude: -3.7083, longitude: -38.5678 },
+  { id: 'm12', name: 'CUCA Mondubim',            avg_rating: 4.1, accessibility_level: 'green',  latitude: -3.7772, longitude: -38.5778 },
 ];
 
 const corDoNivel = {

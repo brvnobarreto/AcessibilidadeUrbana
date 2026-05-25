@@ -20,8 +20,8 @@ function TelaRecuperarSenha({ navigation }) {
       Alert.alert('Atenção', 'Preencha todos os campos.');
       return;
     }
-    if (novaSenha.length < 6) {
-      Alert.alert('Atenção', 'A senha deve ter no mínimo 6 caracteres.');
+    if (novaSenha.length < 8) {
+      Alert.alert('Atenção', 'A senha deve ter no mínimo 8 caracteres.');
       return;
     }
     if (novaSenha !== confirmarSenha) {
@@ -91,7 +91,7 @@ function TelaRecuperarSenha({ navigation }) {
           <Text style={s.label}>Nova senha</Text>
           <TextInput
             style={s.input}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
             placeholderTextColor={cores.textoSecundario}
             value={novaSenha}
             onChangeText={setNovaSenha}

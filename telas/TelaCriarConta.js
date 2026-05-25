@@ -24,8 +24,8 @@ function TelaCriarConta({ navigation }) {
       Alert.alert('Atenção', 'Preencha todos os campos.');
       return;
     }
-    if (senha.length < 6) {
-      Alert.alert('Atenção', 'A senha deve ter no mínimo 6 caracteres.');
+    if (senha.length < 8) {
+      Alert.alert('Atenção', 'A senha deve ter no mínimo 8 caracteres.');
       return;
     }
     if (senha !== confirmarSenha) {
@@ -99,7 +99,7 @@ function TelaCriarConta({ navigation }) {
           <Text style={s.label}>Senha</Text>
           <TextInput
             style={s.input}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
             placeholderTextColor={cores.textoSecundario}
             value={senha}
             onChangeText={setSenha}
