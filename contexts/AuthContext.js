@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setUnauthorizedHandler } from '../lib/api';
 
 const TOKEN_KEY = '@acessivel:token';
 const USER_KEY  = '@acessivel:user';
+const API_URL   = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 const AuthContext = createContext({
   user: null,
@@ -22,8 +24,21 @@ export function AuthProvider({ children }) {
       const t = await AsyncStorage.getItem(TOKEN_KEY);
       const u = await AsyncStorage.getItem(USER_KEY);
       if (t && u) {
-        setToken(t);
-        setUser(JSON.parse(u));
+        try {
+          const res = await fetch(`${API_URL}/auth/me`, {
+            headers: { Authorization: `Bearer ${t}` },
+          });
+          if (res.ok) {
+            setToken(t);
+            setUser(JSON.parse(u));
+          } else {
+            await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+          }
+        } catch {
+          // sem rede — restaura sessão localmente e tenta de novo depois
+          setToken(t);
+          setUser(JSON.parse(u));
+        }
       }
       setCarregando(false);
     })();
@@ -41,6 +56,10 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
   };
+
+  useEffect(() => {
+    setUnauthorizedHandler(sair);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, carregandoSessao, entrar, sair }}>
