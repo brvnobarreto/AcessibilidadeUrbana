@@ -16,7 +16,8 @@ import TelaAvaliar        from './telas/TelaAvaliar';
 import TelaCadastrarLocal from './telas/TelaCadastrarLocal';
 import TelaRanking        from './telas/TelaRanking';
 import TelaPerfil         from './telas/TelaPerfil';
-import TelaBusca          from './telas/TelaBusca';
+import TelaBusca               from './telas/TelaBusca';
+import TelaEstatisticasRegiao  from './telas/TelaEstatisticasRegiao';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { cores } from './styles';
 
@@ -121,8 +122,9 @@ function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Tabs"         component={TabsApp} />
-      <Stack.Screen name="DetalhesLocal" component={TelaDetalhesLocal} />
-      <Stack.Screen name="Avaliar"       component={TelaAvaliar} />
+      <Stack.Screen name="DetalhesLocal"       component={TelaDetalhesLocal} />
+      <Stack.Screen name="Avaliar"             component={TelaAvaliar} />
+      <Stack.Screen name="EstatisticasRegiao"  component={TelaEstatisticasRegiao} />
     </Stack.Navigator>
   );
 }
