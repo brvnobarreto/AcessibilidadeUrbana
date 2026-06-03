@@ -168,8 +168,7 @@ router.get('/:placeId/reviews', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('reviews')
     .select(`
-      id, rating, comment, created_at, updated_at,
-      profiles ( name, avatar_url ),
+      id, rating, comment, created_at, updated_at, user_id,
       accessibility_checklist (
         ramp, sidewalk, sound_signaling, tactile_floor,
         disabled_parking, elevator, accessible_bathroom
@@ -179,7 +178,23 @@ router.get('/:placeId/reviews', requireAuth, async (req, res) => {
     .order('created_at', { ascending: false });
 
   if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+
+  // Busca os perfis separadamente (não há FK direta reviews→profiles para o PostgREST embutir)
+  const userIds = [...new Set((data ?? []).map((r) => r.user_id))];
+  const { data: perfis } = userIds.length
+    ? await supabase.from('profiles').select('user_id, name, avatar_url').in('user_id', userIds)
+    : { data: [] };
+  const perfilPorUser = Object.fromEntries((perfis ?? []).map((p) => [p.user_id, p]));
+
+  const resultado = (data ?? []).map((r) => ({
+    ...r,
+    profiles: {
+      name: perfilPorUser[r.user_id]?.name ?? null,
+      avatar_url: perfilPorUser[r.user_id]?.avatar_url ?? null,
+    },
+  }));
+
+  return res.json(resultado);
 });
 
 export default router;

@@ -14,3 +14,10 @@ web-build/
 .env
 .env.local
 node_modules
+
+# Pastas nativas geradas via `expo prebuild` (regeneráveis)
+/ios
+/android
+
+# Config do editor
+.vscode/

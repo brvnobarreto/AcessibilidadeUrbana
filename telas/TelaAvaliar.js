@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Text, View, TextInput, TouchableOpacity,
   Alert, ScrollView, StyleSheet, ActivityIndicator,
@@ -6,8 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { cores } from '../styles';
-import { reviewsApi } from '../lib/api';
-import { LOCAIS } from '../lib/dadosAcessibilidade';
+import { reviewsApi, placesApi } from '../lib/api';
 
 const CRITERIOS = [
   { key: 'ramp',                label: 'Rampa de acesso',           icone: 'wheelchair-accessibility' },
@@ -42,14 +41,24 @@ function TelaAvaliar({ route, navigation }) {
 
   // Funciona tanto chamada de DetalhesLocal (com local) quanto da aba Avaliar (sem params)
   const localParam = route?.params?.local ?? null;
-  const [localSelecionadoId, setLocalSelecionadoId] = useState(
-    localParam ? null : LOCAIS[0]?.id ?? null
-  );
+  const [locais, setLocais] = useState([]);
+  const [localSelecionadoId, setLocalSelecionadoId] = useState(null);
+
+  // Sem local pré-selecionado: carrega locais reais da API para o usuário escolher
+  useEffect(() => {
+    if (localParam) return;
+    placesApi.listar({ limit: 100 })
+      .then((dados) => {
+        setLocais(dados ?? []);
+        if (dados?.length) setLocalSelecionadoId(dados[0].id);
+      })
+      .catch(() => {});
+  }, [localParam]);
 
   const localAtivo = useMemo(() => {
     if (localParam) return localParam;
-    return LOCAIS.find((l) => l.id === localSelecionadoId) ?? null;
-  }, [localParam, localSelecionadoId]);
+    return locais.find((l) => l.id === localSelecionadoId) ?? null;
+  }, [localParam, locais, localSelecionadoId]);
 
   const [rating, setRating]       = useState(0);
   const [comment, setComment]     = useState('');
@@ -111,29 +120,31 @@ function TelaAvaliar({ route, navigation }) {
           {!localParam && (
             <>
               <Text style={s.secaoTitulo}>Selecionar local</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-                {LOCAIS.map((l) => (
-                  <TouchableOpacity
-                    key={l.id}
-                    onPress={() => setLocalSelecionadoId(l.id)}
-                    style={[s.localChip, localSelecionadoId === l.id && s.localChipAtivo]}>
-                    <Text style={[s.localChipTexto, localSelecionadoId === l.id && s.localChipTextoAtivo]} numberOfLines={1}>
-                      {l.nome}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              {locais.length === 0 ? (
+                <Text style={s.semLocais}>Nenhum local cadastrado para avaliar.</Text>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                  {locais.map((l) => (
+                    <TouchableOpacity
+                      key={l.id}
+                      onPress={() => setLocalSelecionadoId(l.id)}
+                      style={[s.localChip, localSelecionadoId === l.id && s.localChipAtivo]}>
+                      <Text style={[s.localChipTexto, localSelecionadoId === l.id && s.localChipTextoAtivo]} numberOfLines={1}>
+                        {l.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
             </>
           )}
 
           {localAtivo && (
             <>
-              <Text style={s.localNome}>{localAtivo.name ?? localAtivo.nome}</Text>
-              {(localAtivo.category || localAtivo.address || localAtivo.tipo) ? (
+              <Text style={s.localNome}>{localAtivo.name}</Text>
+              {(localAtivo.category || localAtivo.address) ? (
                 <Text style={s.localCategoria}>
-                  {[localAtivo.category ?? localAtivo.tipo, localAtivo.address ?? localAtivo.bairro]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  {[localAtivo.category, localAtivo.address].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
             </>
@@ -213,6 +224,7 @@ const s = StyleSheet.create({
   localChipAtivo:  { backgroundColor: cores.primaria, borderColor: cores.primaria },
   localChipTexto:  { color: cores.textoSecundario, fontSize: 13 },
   localChipTextoAtivo: { color: '#fff', fontWeight: '600' },
+  semLocais:       { color: cores.textoSecundario, fontSize: 13, paddingVertical: 8 },
   secao:           { marginTop: 24 },
   secaoTitulo:     { fontSize: 15, fontWeight: '700', color: cores.texto, marginBottom: 8 },
   secaoDesc:       { fontSize: 13, color: cores.textoSecundario, marginBottom: 12 },

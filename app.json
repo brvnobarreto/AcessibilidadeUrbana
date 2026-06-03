@@ -13,6 +13,7 @@
       "**/*"
     ],
     "ios": {
+      "bundleIdentifier": "com.brunobarreto.acessibilidadeurbana",
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -21,6 +22,7 @@
       }
     },
     "android": {
+      "package": "com.brunobarreto.acessibilidadeurbana",
       "adaptiveIcon": {
         "backgroundColor": "#3498DB"
       }

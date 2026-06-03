@@ -56,7 +56,7 @@ function TelaInicial({ navigation }) {
     let cancelado = false;
     mapaApi
       .listar(filtro)
-      .then((dados) => { if (!cancelado && dados?.length) setLocais(dados); })
+      .then((dados) => { if (!cancelado) setLocais(dados ?? []); })
       .catch((err) => console.warn('[mapa] API offline, usando mock:', err.message));
     return () => { cancelado = true; };
   }, [filtro]);

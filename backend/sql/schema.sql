@@ -56,6 +56,23 @@ create trigger trg_profiles_updated_at
   for each row execute function update_updated_at();
 
 -- =============================================================
+-- 2b. PASSWORD_RESET_CODES — códigos OTP de recuperação de senha
+-- =============================================================
+create table if not exists public.password_reset_codes (
+  id         uuid        not null default gen_random_uuid(),
+  user_id    uuid        not null,
+  code_hash  text        not null,
+  expires_at timestamptz not null,
+  used       boolean     not null default false,
+  attempts   integer     not null default 0,
+  created_at timestamptz not null default now(),
+  constraint password_reset_codes_pkey      primary key (id),
+  constraint password_reset_codes_user_fkey foreign key (user_id) references users (id) on delete cascade
+);
+create index if not exists idx_prc_user    on public.password_reset_codes using btree (user_id);
+create index if not exists idx_prc_expires on public.password_reset_codes using btree (expires_at);
+
+-- =============================================================
 -- 3. REGIONS
 -- =============================================================
 create table if not exists public.regions (
@@ -270,6 +287,7 @@ group by r.id, r.name;
 -- Como o backend usa SERVICE_ROLE_KEY (bypassa RLS), habilitamos
 -- RLS sem políticas para garantir que ninguém acesse via anon key.
 alter table public.users                   enable row level security;
+alter table public.password_reset_codes    enable row level security;
 alter table public.profiles                enable row level security;
 alter table public.regions                 enable row level security;
 alter table public.places                  enable row level security;

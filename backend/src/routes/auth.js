@@ -3,12 +3,16 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../lib/supabase.js';
+import { sendPasswordResetCode } from '../lib/mailer.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 15;
+
+const OTP_EXPIRES_MINUTES = 10; // validade do código de recuperação
+const OTP_MAX_ATTEMPTS    = 5;  // tentativas erradas antes de invalidar o código
 
 // POST /auth/register
 router.post(
@@ -165,19 +169,20 @@ router.get('/me', requireAuth, async (req, res) => {
   });
 });
 
-// POST /auth/reset-password — redefinição direta (email + nova senha)
-// Versão simples para projeto acadêmico sem infra de e-mail
+// POST /auth/forgot-password — gera um código OTP e envia por e-mail
+// Resposta genérica (não revela se o e-mail existe) para evitar enumeração.
 router.post(
-  '/reset-password',
-  [
-    body('email').isEmail().normalizeEmail(),
-    body('newPassword').isLength({ min: 6 }),
-  ],
+  '/forgot-password',
+  [body('email').isEmail().normalizeEmail()],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { email, newPassword } = req.body;
+    const { email } = req.body;
+    const respostaGenerica = {
+      success: true,
+      message: 'Se o e-mail estiver cadastrado, você receberá um código de recuperação.',
+    };
 
     const { data: user } = await supabase
       .from('users')
@@ -185,25 +190,110 @@ router.post(
       .eq('email', email)
       .maybeSingle();
 
-    if (!user) {
-      return res.status(404).json({ error: 'E-mail não cadastrado.' });
-    }
-    if (!user.is_active) {
-      return res.status(403).json({ error: 'Conta desativada.' });
+    // Só gera/envia se o usuário existe e está ativo — mas sempre responde igual.
+    if (!user || !user.is_active) {
+      return res.json(respostaGenerica);
     }
 
+    // Invalida códigos anteriores ainda válidos deste usuário.
+    await supabase
+      .from('password_reset_codes')
+      .update({ used: true })
+      .eq('user_id', user.id)
+      .eq('used', false);
+
+    // Gera código de 6 dígitos e guarda só o hash.
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code_hash = await bcrypt.hash(code, 10);
+    const expires_at = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000).toISOString();
+
+    const { error: insErr } = await supabase
+      .from('password_reset_codes')
+      .insert({ user_id: user.id, code_hash, expires_at });
+
+    if (insErr) return res.status(500).json({ error: insErr.message });
+
+    try {
+      await sendPasswordResetCode(email, code);
+    } catch (mailErr) {
+      console.error('[forgot-password] erro ao enviar e-mail:', mailErr.message);
+      return res.status(500).json({ error: 'Não foi possível enviar o código. Tente novamente.' });
+    }
+
+    return res.json(respostaGenerica);
+  }
+);
+
+// POST /auth/reset-password — redefine a senha validando o código OTP
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('code').isLength({ min: 6, max: 6 }).isNumeric(),
+    body('newPassword').isLength({ min: 6 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { email, code, newPassword } = req.body;
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, is_active')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (!user || !user.is_active) {
+      return res.status(400).json({ error: 'Código inválido ou expirado.' });
+    }
+
+    // Pega o código mais recente, ainda não usado, deste usuário.
+    const { data: registro } = await supabase
+      .from('password_reset_codes')
+      .select('id, code_hash, expires_at, used, attempts')
+      .eq('user_id', user.id)
+      .eq('used', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!registro) {
+      return res.status(400).json({ error: 'Código inválido ou expirado.' });
+    }
+
+    // Expirado?
+    if (new Date(registro.expires_at) < new Date()) {
+      await supabase.from('password_reset_codes').update({ used: true }).eq('id', registro.id);
+      return res.status(400).json({ error: 'Código expirado. Solicite um novo.' });
+    }
+
+    // Excedeu tentativas?
+    if (registro.attempts >= OTP_MAX_ATTEMPTS) {
+      await supabase.from('password_reset_codes').update({ used: true }).eq('id', registro.id);
+      return res.status(429).json({ error: 'Muitas tentativas. Solicite um novo código.' });
+    }
+
+    const codigoOk = await bcrypt.compare(code, registro.code_hash);
+    if (!codigoOk) {
+      await supabase
+        .from('password_reset_codes')
+        .update({ attempts: registro.attempts + 1 })
+        .eq('id', registro.id);
+      return res.status(400).json({ error: 'Código inválido.' });
+    }
+
+    // Código válido — troca a senha e consome o código.
     const password_hash = await bcrypt.hash(newPassword, 12);
 
     const { error: updErr } = await supabase
       .from('users')
-      .update({
-        password_hash,
-        failed_login_attempts: 0,
-        locked_until: null,
-      })
+      .update({ password_hash, failed_login_attempts: 0, locked_until: null })
       .eq('id', user.id);
 
     if (updErr) return res.status(500).json({ error: updErr.message });
+
+    await supabase.from('password_reset_codes').update({ used: true }).eq('id', registro.id);
 
     return res.json({ success: true, message: 'Senha redefinida com sucesso.' });
   }
